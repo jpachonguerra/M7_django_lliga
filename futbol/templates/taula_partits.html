@@ -1,0 +1,16 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'futbol/style.css' %}">
+
+
+<h1>Taula de partits</h1>
+<table>
+    {% for row in resultats %}
+    <tr>
+    {% for cell in row %}
+        {% if forloop.first or forloop.parentloop.first %} <th class="cabecera"> {% else %} <td> {% endif %}
+            {{ cell }}
+        {% if forloop.first or forloop.parentloop.first %} </th> {% else %} </td> {% endif %}
+    {% endfor %}
+    </tr>
+    {% endfor %}
+</table>

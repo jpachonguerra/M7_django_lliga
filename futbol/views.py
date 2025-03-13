@@ -1,11 +1,77 @@
-from django.shortcuts import render
-
+from django.shortcuts import render, redirect
+from django import forms
 from futbol.models import *
+from django.db.models import Count, Q
+
 
 # Create your views here.
 
-def classificacio(request):
-    lliga = Lliga.objects.all()[1]
+class MenuForm(forms.Form):
+    lliga = forms.ModelChoiceField(queryset=Lliga.objects.all())
+
+class JugadorForm(forms.ModelForm):
+    class Meta:
+        model = Jugador
+        fields = "__all__"
+
+def nou_jugador(request):
+    form = JugadorForm()
+    if request.method == "POST":
+        form = JugadorForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('taula_pichichis')
+    return render(request, "menu.html",{
+                    "form": form,
+            })
+
+def taula_pichichis(request):
+    jugadors = Jugador.objects.annotate(gols=Count('event__tipus_esdeveniment', filter=Q(event__tipus_esdeveniment='gol'))).order_by('-gols')
+    return render(request, "taula_pichichis.html", {
+        "jugadors": jugadors,
+    })
+
+def taula_partits(request):
+    equips = Equip.objects.all()
+    partits = Partit.objects.all()
+
+    # Crear una matriz vacía para almacenar los resultados
+    resultats = []
+    # Agregar la fila de encabezados
+    fila_encabezados = [""] + [equip.nom for equip in equips]
+    resultats.append(fila_encabezados)
+
+    for equip_local in equips:
+        fila = [equip_local.nom]
+        for equip_visitant in equips:
+            # Buscar el partido correspondiente
+            partido = partits.filter(equip_local=equip_local, equip_visitant=equip_visitant).first()
+            if partido:
+                # Agregar el resultado del partido a la fila
+                fila.append(f"{partido.gols_local()} - {partido.gols_visitant()}")
+            else:
+                # Si no hay partido, agregar un valor vacío
+                fila.append("")
+        resultats.append(fila)
+
+    return render(request, "taula_partits.html", {
+        "resultats": resultats,
+    })
+
+def menu(request):
+    form = MenuForm()
+    if request.method == "POST":
+        form = MenuForm(request.POST)
+        if form.is_valid():
+            lliga = form.cleaned_data.get("lliga")
+            # cridem a /classificacio/<lliga_id>
+            return redirect('classificacio',lliga.id)
+    return render(request, "menu.html",{
+                    "form": form,
+            })
+
+def classificacio(request,lliga_id):
+    lliga = Lliga.objects.get(id=lliga_id)
     equips = lliga.equips.all()
     classi = []
  

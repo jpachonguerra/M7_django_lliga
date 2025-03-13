@@ -1,0 +1,8 @@
+table th, table td {
+  border-bottom: 1px solid black;
+}
+
+table tr:first-child th {
+    writing-mode: vertical-rl;
+   
+  }
